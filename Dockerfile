@@ -2,7 +2,8 @@ FROM debian:buster
 LABEL maintainer="markus.sitzmann@gmail.com"
 
 ENV RDBASE="/opt/rdkit"
-ENV RDKIT_BRANCH="Release_2019_03"
+ENV RDKIT_BRANCH="Release_2018_09"
+#ENV RDKIT_BRANCH="Release_2019_03"
 
 ENV MOLHASH_BASE="/opt/molhash"
 ENV MOLHASH_BRANCH="master"
@@ -39,14 +40,11 @@ RUN git clone -b $RDKIT_BRANCH --single-branch https://github.com/rdkit/rdkit.gi
 WORKDIR $RDBASE/build
 
 RUN cmake \
-  -D Py_ENABLE_SHARED=1 \
-  -D PYTHON_EXECUTABLE=/usr/bin/python3 \
-  -D RDK_INSTALL_INTREE=ON \
-  -D RDK_BUILD_INCHI_SUPPORT=ON \
-  -D RDK_BUILD_AVALON_SUPPORT=ON \
-  -D RDK_BUILD_PYTHON_WRAPPERS=ON \
-  -D RDK_BUILD_CAIRO_SUPPORT=ON \
-  -D RDK_BUILD_CPP_TESTS=ON \
+  -D RDK_INSTALL_INTREE=OFF \
+  -D RDK_BUILD_INCHI_SUPPORT=OFF \
+  -D RDK_BUILD_AVALON_SUPPORT=OFF \
+  -D RDK_BUILD_PYTHON_WRAPPERS=OFF \
+  -D RDK_BUILD_CAIRO_SUPPORT=OFF \
   ..
 
 RUN make -j $(nproc) && make install
@@ -61,11 +59,17 @@ RUN git clone -b $MOLHASH_BRANCH --single-branch https://github.com/nextmovesoft
 
 WORKDIR $MOLHASH_BASE/build
 
+ENV PREFIX=$RDBASE
+
 RUN cmake \
-#    -D TARGET=RDKIT \
-#    -D RDKIT_DIR=/opt/rdkit \
-#    -D BOOST_ROOT=$LD_LIBRARY_PATH \
-#    -D BOOST_LIBRARYDIR=$LD_LIBRARY_PATH \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D CMAKE_PREFIX_PATH=$PREFIX \
+    -D CMAKE_INSTALL_PREFIX=$PREFIX \
+    -D TARGET=RDKIT \
+    -D RDKIT_DIR=$PREFIX \
     ..
 
-RUN make -j $(nproc)
+RUN cmake --build . --config Release \
+    && cp molhash /opt/molhash \
+    && cp libmolhashlib.a "/opt/molhash/"
+
